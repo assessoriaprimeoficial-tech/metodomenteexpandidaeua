@@ -1,0 +1,58 @@
+name: Refine sales CTAs
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refine CTA labels
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/upsell/TuGemeloDigitalPage.tsx')
+          s = p.read_text()
+          replacements = [
+              ('<CTA href="#combo" />', '<CTA href="#combo">GET THE COMBO</CTA>'),
+              ('<CTA />', '<CTA>GET ACCESS</CTA>', 1),
+              ('<CTA />', '<CTA>I WANT IT NOW</CTA>', 1),
+              ('<CTA />', '<CTA>START NOW</CTA>', 1),
+              ('<CTA />', '<CTA>GET MY ACCESS</CTA>', 1),
+              ('<CTA />', '<CTA>YES, I WANT IT</CTA>', 1),
+              ('<CTA />', '<CTA>GET THE METHOD</CTA>', 1),
+              ('<CTA />', '<CTA>GET THE COMBO</CTA>', 1),
+              ('<CTA />', '<CTA>GET ACCESS</CTA>', 1),
+              ('<CTA />', '<CTA>GET ALL 4 GUIDES</CTA>', 1),
+              ('<CTA href="#combo">YES, I WANT THE COMPLETE METHOD</CTA>', '<CTA href="#combo">GET THE COMPLETE METHOD</CTA>'),
+              ('<CTA />', '<CTA>I WANT IT NOW</CTA>', 1),
+              ('<CTA />', '<CTA>START NOW</CTA>', 1),
+          ]
+          for item in replacements:
+              old, new = item[0], item[1]
+              count = item[2] if len(item) > 2 else None
+              if count is None:
+                  if old not in s:
+                      raise SystemExit(f'Missing expected text: {old}')
+                  s = s.replace(old, new)
+              else:
+                  if old not in s:
+                      raise SystemExit(f'Missing expected text: {old}')
+                  s = s.replace(old, new, count)
+          p.write_text(s)
+          PY
+      - name: Commit CTA refinement
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/upsell/TuGemeloDigitalPage.tsx .github/workflows/refine-ctas.yml
+          git rm .github/workflows/refine-ctas.yml
+          git commit -m "Refine sales CTAs for mobile"
+          git push
